@@ -1,6 +1,7 @@
 package com.example.android.popularmoviesstage1;
 
 import android.content.Context;
+import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -20,6 +21,7 @@ import com.example.android.popularmoviesstage1.utilities.MovieJsonUtils;
 import org.json.JSONException;
 
 import java.io.IOException;
+import java.util.List;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -39,6 +41,8 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
 
     private final int NO_INTERNET = 1;
     private final int ERROR = 2;
+
+    private List<Movies> mMoviesData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,7 +83,18 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
 
     @Override
     public void onItemClick(int click) {
+        Movies currentMovie = mMoviesData.get(click);
+        String title = currentMovie.getTitle();
+        String poster = currentMovie.getPoster();
+        String plot = currentMovie.getPlot();
+        Double rating = currentMovie.getRating();
+        String releaseDate = currentMovie.getReleaseDate();
 
+        String[] movieDetail = {title, poster, plot, String.valueOf(rating), releaseDate};
+
+        Intent intent = new Intent(this, MovieDetail.class);
+        intent.putExtra(Intent.EXTRA_TEXT, movieDetail);
+        startActivity(intent);
     }
 
     private void showError(int type) {
@@ -105,7 +120,7 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
         mRecyclerView.setVisibility(View.VISIBLE);
     }
 
-    private class FetchMovie extends AsyncTask<String, Void, String[]> {
+    private class FetchMovie extends AsyncTask<String, Void, List<Movies>> {
 
         @Override
         protected void onPreExecute() {
@@ -116,7 +131,7 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
         }
 
         @Override
-        protected String[] doInBackground(String... strings) {
+        protected List<Movies> doInBackground(String... strings) {
             OkHttpClient client = new OkHttpClient();
 
             // TODO: Add your API Key here
@@ -127,7 +142,7 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
                     .get()
                     .build();
 
-            String[] result = null;
+            List<Movies> result = null;
             try {
                 Response response = client.newCall(request).execute();
                 result = MovieJsonUtils.getMovieThumbnail(response.body().string());
@@ -141,10 +156,18 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
         }
 
         @Override
-        protected void onPostExecute(String[] strings) {
-            if (strings != null) {
+        protected void onPostExecute(List<Movies> movies) {
+            if (movies != null) {
+                mMoviesData = movies;
+
+                String[] posters = new String[movies.size()];
+                for (int i = 0; i < movies.size(); i++) {
+                    Movies currentMovie = movies.get(i);
+                    posters[i] = currentMovie.getPoster();
+                }
+
                 mLoading.setVisibility(View.INVISIBLE);
-                mAdapter = new MoviesAdapter(strings, MainActivity.this);
+                mAdapter = new MoviesAdapter(posters, MainActivity.this);
                 mRecyclerView.setAdapter(mAdapter);
                 showMovies();
             } else
