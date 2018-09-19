@@ -18,7 +18,7 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieHolde
         void onItemClick(int click);
     }
 
-    public MoviesAdapter(String[] movieData, ItemClickListener clickListener) {
+    MoviesAdapter(String[] movieData, ItemClickListener clickListener) {
         mMovieData = movieData;
         mOnClickListener = clickListener;
     }
@@ -39,7 +39,10 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieHolde
         final String BASE_IMAGE_URL = "http://image.tmdb.org/t/p/w185/";
 
         String currentThumbnail = BASE_IMAGE_URL + mMovieData[position];
-        Picasso.get().load(currentThumbnail).into(holder.mMovieThumbnail);
+        Picasso.get().load(currentThumbnail)
+                .placeholder(R.drawable.ic_launcher_foreground)
+                .error(R.drawable.ic_launcher_foreground)
+                .into(holder.mMovieThumbnail);
     }
 
     @Override
@@ -51,7 +54,7 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieHolde
 
         ImageView mMovieThumbnail;
 
-        public MovieHolder(View itemView) {
+        MovieHolder(View itemView) {
             super(itemView);
 
             mMovieThumbnail = itemView.findViewById(R.id.iv_movie_main_thumbnail);

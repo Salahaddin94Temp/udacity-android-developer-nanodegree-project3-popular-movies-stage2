@@ -31,13 +31,12 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
 
     private TextView mErrorText;
     private ProgressBar mLoading;
-
     private RecyclerView mRecyclerView;
-    private RecyclerView.Adapter mAdapter;
-    private RecyclerView.LayoutManager mLayoutManager;
 
     private final int POPULAR = 1;
     private final int TOP_RATED = 2;
+    private int mSort;
+    private final String SAVE = "save";
 
     private final int NO_INTERNET = 1;
     private final int ERROR = 2;
@@ -55,10 +54,17 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
         mRecyclerView = findViewById(R.id.rv_movies);
         mRecyclerView.setHasFixedSize(true);
 
-        mLayoutManager = new GridLayoutManager(this, 2);
-        mRecyclerView.setLayoutManager(mLayoutManager);
+        mRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
 
-        loadMovies(POPULAR);
+        if (savedInstanceState != null)
+            mSort = savedInstanceState.getInt(SAVE);
+        loadMovies(mSort);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putInt(SAVE, mSort);
+        super.onSaveInstanceState(outState);
     }
 
     private void loadMovies(int sort) {
@@ -73,9 +79,11 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
 
         switch (sort) {
             case TOP_RATED:
+                mSort = TOP_RATED;
                 new FetchMovie().execute("top_rated");
                 break;
             case POPULAR:
+                mSort = POPULAR;
             default:
                 new FetchMovie().execute("popular");
         }
@@ -145,7 +153,7 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
             List<Movies> result = null;
             try {
                 Response response = client.newCall(request).execute();
-                result = MovieJsonUtils.getMovieThumbnail(response.body().string());
+                result = MovieJsonUtils.getMovieThumbnail(response.body().string(), MainActivity.this);
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (JSONException e) {
@@ -167,8 +175,7 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
                 }
 
                 mLoading.setVisibility(View.INVISIBLE);
-                mAdapter = new MoviesAdapter(posters, MainActivity.this);
-                mRecyclerView.setAdapter(mAdapter);
+                mRecyclerView.setAdapter(new MoviesAdapter(posters, MainActivity.this));
                 showMovies();
             } else
                 showError(ERROR);

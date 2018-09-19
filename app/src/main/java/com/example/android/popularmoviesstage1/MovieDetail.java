@@ -27,14 +27,23 @@ public class MovieDetail extends AppCompatActivity {
         Intent intent = getIntent();
         if (intent != null) {
             String[] movieDetail = intent.getStringArrayExtra(Intent.EXTRA_TEXT);
+
             mTitle.setText(movieDetail[0]);
 
             final String BASE_IMAGE_URL = "http://image.tmdb.org/t/p/w342/";
             String posterUrl = BASE_IMAGE_URL + movieDetail[1];
-            Picasso.get().load(posterUrl).into(mPoster);
+            Picasso.get().load(posterUrl)
+                    .placeholder(R.drawable.ic_launcher_foreground)
+                    .error(R.drawable.ic_launcher_foreground)
+                    .into(mPoster);
 
             mPlot.setText(movieDetail[2]);
-            mRating.setText(movieDetail[3]);
+
+            if (!movieDetail[3].equals("-1.0"))
+                mRating.setText(movieDetail[3]);
+            else
+                mRating.setText("N/A");
+
             mReleaseDate.setText(movieDetail[4]);
         }
     }
