@@ -143,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
             OkHttpClient client = new OkHttpClient();
 
             // TODO: Add your API Key here
-            String apiKey = "";
+            String apiKey = BuildConfig.THE_MOVIE_DB_API_KEY;
 
             Request request = new Request.Builder()
                     .url("http://api.themoviedb.org/3/movie/" + strings[0] + "?api_key=" + apiKey)
