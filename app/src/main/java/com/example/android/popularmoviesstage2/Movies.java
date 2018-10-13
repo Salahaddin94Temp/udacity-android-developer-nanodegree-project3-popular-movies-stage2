@@ -1,4 +1,4 @@
-package com.example.android.popularmoviesstage1;
+package com.example.android.popularmoviesstage2;
 
 public class Movies {
     private String title;

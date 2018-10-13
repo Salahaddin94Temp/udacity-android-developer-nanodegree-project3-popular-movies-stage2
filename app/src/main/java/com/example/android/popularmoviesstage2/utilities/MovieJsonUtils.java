@@ -1,9 +1,9 @@
-package com.example.android.popularmoviesstage1.utilities;
+package com.example.android.popularmoviesstage2.utilities;
 
 import android.content.Context;
 
-import com.example.android.popularmoviesstage1.Movies;
-import com.example.android.popularmoviesstage1.R;
+import com.example.android.popularmoviesstage2.Movies;
+import com.example.android.popularmoviesstage2.R;
 
 import org.json.JSONArray;
 import org.json.JSONException;

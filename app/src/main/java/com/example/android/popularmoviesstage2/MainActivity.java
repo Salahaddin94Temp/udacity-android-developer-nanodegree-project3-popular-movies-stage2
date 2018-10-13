@@ -1,4 +1,4 @@
-package com.example.android.popularmoviesstage1;
+package com.example.android.popularmoviesstage2;
 
 import android.content.Context;
 import android.content.Intent;
@@ -16,7 +16,7 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.example.android.popularmoviesstage1.utilities.MovieJsonUtils;
+import com.example.android.popularmoviesstage2.utilities.MovieJsonUtils;
 
 import org.json.JSONException;
 
@@ -63,8 +63,8 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        outState.putInt(SAVE, mSort);
         super.onSaveInstanceState(outState);
+        outState.putInt(SAVE, mSort);
     }
 
     private void loadMovies(int sort) {
