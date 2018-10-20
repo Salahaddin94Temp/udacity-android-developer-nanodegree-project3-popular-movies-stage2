@@ -78,27 +78,24 @@ public final class NetworkUtils {
 
         URL url = getUrl(path);
 
-        OkHttpClient client = new OkHttpClient();
-
-        Request request = new Request.Builder()
-                .url(url)
-                .get()
-                .build();
-
-        try {
-            Response response = client.newCall(request).execute();
-            return response.body().string();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return "";
+        return getResponse(url);
     }
 
     public static String getTrailer(String movieId) {
 
         URL url = getUrl(movieId, TRAILER_PATH);
 
+        return getResponse(url);
+    }
+
+    public static String getReview(String movieId) {
+
+        URL url = getUrl(movieId, REVIEWS_PATH);
+
+        return getResponse(url);
+    }
+
+    private static String getResponse(URL url) {
         OkHttpClient client = new OkHttpClient();
 
         Request request = new Request.Builder()

@@ -13,7 +13,7 @@ public class TrailersAdapter extends RecyclerView.Adapter<TrailersAdapter.Traile
     private final ItemClickListener mOnClickListener;
 
     public interface ItemClickListener {
-        void onItemClick(int click);
+        void onTrailerClick(int click);
     }
 
     public TrailersAdapter(String[] trailerData, ItemClickListener clickListener) {
@@ -56,7 +56,7 @@ public class TrailersAdapter extends RecyclerView.Adapter<TrailersAdapter.Traile
 
         @Override
         public void onClick(View view) {
-            mOnClickListener.onItemClick(getAdapterPosition());
+            mOnClickListener.onTrailerClick(getAdapterPosition());
         }
     }
 }

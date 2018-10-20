@@ -21,18 +21,23 @@ import com.squareup.picasso.Picasso;
 
 import org.json.JSONException;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MovieDetail extends AppCompatActivity implements
         TrailersAdapter.ItemClickListener,
-        LoaderManager.LoaderCallbacks<String[][]> {
+        LoaderManager.LoaderCallbacks<List<String[][]>> {
 
-    private TextView mTitle, mPlot, mRating, mReleaseDate, mTrailer;
+    private TextView mTitle, mPlot, mRating, mReleaseDate, mTrailer, mReview;
     private ImageView mPoster;
-    private RecyclerView mRecyclerView;
+    private View mTrailerLine, mReviewLine;
+    private RecyclerView mTrailerList;
+    private RecyclerView mReviewList;
 
     private static final int LOADER_ID = 10;
 
-    final String BASE_IMAGE_URL = "http://image.tmdb.org/t/p/w342/";
-    final String YOUTUBE_URL = "http://www.youtube.com/watch?v=";
+    private static final String BASE_IMAGE_URL = "http://image.tmdb.org/t/p/w342/";
+    private static final String YOUTUBE_URL = "http://www.youtube.com/watch?v=";
 
     private String mMovieId;
     private String[][] mTrailerData;
@@ -47,11 +52,19 @@ public class MovieDetail extends AppCompatActivity implements
         mPlot = findViewById(R.id.tv_plot_synopsis);
         mRating = findViewById(R.id.tv_average_rating);
         mReleaseDate = findViewById(R.id.tv_release_date);
+        mTrailerLine = findViewById(R.id.v_trailer_line);
         mTrailer = findViewById(R.id.tv_trailers);
+        mReviewLine = findViewById(R.id.v_review_line);
+        mReview = findViewById(R.id.tv_review);
 
-        mRecyclerView = findViewById(R.id.rv_trailers);
-        mRecyclerView.setHasFixedSize(true);
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mTrailerList = findViewById(R.id.rv_trailers);
+        mTrailerList.setHasFixedSize(true);
+        mTrailerList.setLayoutManager(new LinearLayoutManager(this));
+
+        mReviewList = findViewById(R.id.rv_reviews);
+        mReviewList.setHasFixedSize(true);
+        mReviewList.setLayoutManager(new LinearLayoutManager(this));
+        mReviewList.setNestedScrollingEnabled(false);
 
         Intent intent = getIntent();
         if (intent != null) {
@@ -80,7 +93,7 @@ public class MovieDetail extends AppCompatActivity implements
     }
 
     @Override
-    public void onItemClick(int click) {
+    public void onTrailerClick(int click) {
 
         String currentTrailer = mTrailerData[click][0];
 
@@ -95,27 +108,31 @@ public class MovieDetail extends AppCompatActivity implements
 
     @NonNull
     @Override
-    public Loader<String[][]> onCreateLoader(int id, @Nullable Bundle args) {
-        return new AsyncTaskLoader<String[][]>(this) {
+    public Loader<List<String[][]>> onCreateLoader(int id, @Nullable Bundle args) {
+        return new AsyncTaskLoader<List<String[][]>>(this) {
 
-            String[][] mTrailersData = null;
+            List<String[][]> mData = null;
 
             @Override
             protected void onStartLoading() {
-                if (mTrailersData != null)
-                    deliverResult(mTrailersData);
+                if (mData != null)
+                    deliverResult(mData);
                 else
                     forceLoad();
             }
 
             @Nullable
             @Override
-            public String[][] loadInBackground() {
-                String networkResult = NetworkUtils.getTrailer(mMovieId);
+            public List<String[][]> loadInBackground() {
+                String trailerResult = NetworkUtils.getTrailer(mMovieId);
+                String reviewResult = NetworkUtils.getReview(mMovieId);
 
-                String[][] data = null;
+                List<String[][]> data = new ArrayList<>();
                 try {
-                    data = MovieJsonUtils.getTrailers(networkResult, MovieDetail.this);
+                    String[][] trailerData = MovieJsonUtils.getTrailers(trailerResult, MovieDetail.this);
+                    String[][] reviewData = MovieJsonUtils.getReviews(reviewResult, MovieDetail.this);
+                    data.add(0, trailerData);
+                    data.add(1, reviewData);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -124,32 +141,45 @@ public class MovieDetail extends AppCompatActivity implements
             }
 
             @Override
-            public void deliverResult(@Nullable String[][] data) {
-                mTrailersData = data;
+            public void deliverResult(@Nullable List<String[][]> data) {
+                mData = data;
                 super.deliverResult(data);
             }
         };
     }
 
     @Override
-    public void onLoadFinished(@NonNull Loader<String[][]> loader, String[][] data) {
-        if (data != null && data.length > 0) {
-            mTrailerData = data;
+    public void onLoadFinished(@NonNull Loader<List<String[][]>> loader, List<String[][]> data) {
+        if (data != null) {
+            String[][] trailerData = data.get(0);
+            String[][] reviewData = data.get(1);
 
-            String[] trailerNames = new String[data.length];
-            for (int i = 0; i < data.length; i++) {
-                String currentTrailer = data[i][1];
-                trailerNames[i] = currentTrailer;
+            if (trailerData != null && trailerData.length > 0) {
+                mTrailerData = trailerData;
+
+                String[] trailerNames = new String[trailerData.length];
+                for (int i = 0; i < trailerData.length; i++) {
+                    String currentTrailer = trailerData[i][1];
+                    trailerNames[i] = currentTrailer;
+                }
+
+                mTrailerLine.setVisibility(View.VISIBLE);
+                mTrailer.setVisibility(View.VISIBLE);
+                mTrailerList.setVisibility(View.VISIBLE);
+                mTrailerList.setAdapter(new TrailersAdapter(trailerNames, MovieDetail.this));
             }
 
-            mTrailer.setVisibility(View.VISIBLE);
-            mRecyclerView.setVisibility(View.VISIBLE);
-            mRecyclerView.setAdapter(new TrailersAdapter(trailerNames, MovieDetail.this));
+            if (reviewData != null && reviewData.length > 0) {
+                mReviewLine.setVisibility(View.VISIBLE);
+                mReview.setVisibility(View.VISIBLE);
+                mReviewList.setVisibility(View.VISIBLE);
+                mReviewList.setAdapter(new ReviewsAdapter(reviewData));
+            }
         }
     }
 
     @Override
-    public void onLoaderReset(@NonNull Loader<String[][]> loader) {
+    public void onLoaderReset(@NonNull Loader<List<String[][]>> loader) {
 
     }
 }

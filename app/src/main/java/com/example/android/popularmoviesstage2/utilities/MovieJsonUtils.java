@@ -86,4 +86,35 @@ public final class MovieJsonUtils {
 
         return data;
     }
+
+    public static String[][] getReviews(String mainJson, Context context) throws JSONException {
+
+        final String AUTHOR = "author";
+        final String CONTENT = "content";
+
+        JSONObject root = new JSONObject(mainJson);
+
+        if (root.has(ERROR)) {
+            return null;
+        }
+
+        JSONArray results;
+        if (root.has(RESULTS))
+            results = root.getJSONArray(RESULTS);
+        else
+            return null;
+
+        String[][] data = new String[results.length()][2];
+        for (int i = 0; i < results.length(); i++) {
+            JSONObject result = results.getJSONObject(i);
+
+            String author = result.optString(AUTHOR, context.getString(R.string.author_placeholder));
+            data[i][0] = author;
+
+            String content = result.optString(CONTENT, context.getString(R.string.content_placeholder));
+            data[i][1] = content;
+        }
+
+        return data;
+    }
 }
