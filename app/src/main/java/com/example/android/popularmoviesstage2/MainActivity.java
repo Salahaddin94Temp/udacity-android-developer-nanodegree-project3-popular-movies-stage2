@@ -4,8 +4,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.AsyncTaskLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -17,29 +21,31 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.example.android.popularmoviesstage2.utilities.MovieJsonUtils;
+import com.example.android.popularmoviesstage2.utilities.NetworkUtils;
 
 import org.json.JSONException;
 
-import java.io.IOException;
 import java.util.List;
 
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-
-public class MainActivity extends AppCompatActivity implements MoviesAdapter.ItemClickListener {
+public class MainActivity extends AppCompatActivity implements
+        MoviesAdapter.ItemClickListener,
+        LoaderManager.LoaderCallbacks<List<Movies>> {
 
     private TextView mErrorText;
     private ProgressBar mLoading;
     private RecyclerView mRecyclerView;
 
-    private final int POPULAR = 1;
-    private final int TOP_RATED = 2;
+    private static final int POPULAR_LOADER_ID = 1;
+    private static final int TOP_RATED_LOADER_ID = 2;
+
+    public static final int POPULAR = 1;
+    public static final int TOP_RATED = 2;
     private int mSort;
     private final String SAVE = "save";
 
     private final int NO_INTERNET = 1;
     private final int ERROR = 2;
+
 
     private List<Movies> mMoviesData;
 
@@ -80,12 +86,12 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
         switch (sort) {
             case TOP_RATED:
                 mSort = TOP_RATED;
-                new FetchMovie().execute("top_rated");
+                getSupportLoaderManager().initLoader(TOP_RATED_LOADER_ID, null, this);
                 break;
             case POPULAR:
-                mSort = POPULAR;
             default:
-                new FetchMovie().execute("popular");
+                mSort = POPULAR;
+                getSupportLoaderManager().initLoader(POPULAR_LOADER_ID, null, this);
         }
     }
 
@@ -128,58 +134,70 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Ite
         mRecyclerView.setVisibility(View.VISIBLE);
     }
 
-    private class FetchMovie extends AsyncTask<String, Void, List<Movies>> {
+    @NonNull
+    @Override
+    public Loader<List<Movies>> onCreateLoader(int id, @Nullable Bundle args) {
+        return new AsyncTaskLoader<List<Movies>>(this) {
 
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            mLoading.setVisibility(View.VISIBLE);
-            mErrorText.setVisibility(View.INVISIBLE);
-            mRecyclerView.setVisibility(View.INVISIBLE);
-        }
+            List<Movies> mMovieData = null;
 
-        @Override
-        protected List<Movies> doInBackground(String... strings) {
-            OkHttpClient client = new OkHttpClient();
-
-            // TODO: Add your API Key here
-            String apiKey = BuildConfig.THE_MOVIE_DB_API_KEY;
-
-            Request request = new Request.Builder()
-                    .url("http://api.themoviedb.org/3/movie/" + strings[0] + "?api_key=" + apiKey)
-                    .get()
-                    .build();
-
-            List<Movies> result = null;
-            try {
-                Response response = client.newCall(request).execute();
-                result = MovieJsonUtils.getMovieThumbnail(response.body().string(), MainActivity.this);
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (JSONException e) {
-                e.printStackTrace();
+            @Override
+            protected void onStartLoading() {
+                if (mMovieData != null)
+                    deliverResult(mMovieData);
+                else {
+                    mLoading.setVisibility(View.VISIBLE);
+                    mErrorText.setVisibility(View.INVISIBLE);
+                    mRecyclerView.setVisibility(View.INVISIBLE);
+                    forceLoad();
+                }
             }
 
-            return result;
-        }
+            @Nullable
+            @Override
+            public List<Movies> loadInBackground() {
 
-        @Override
-        protected void onPostExecute(List<Movies> movies) {
-            if (movies != null) {
-                mMoviesData = movies;
+                String networkResponse = NetworkUtils.getMovieList(mSort);
 
-                String[] posters = new String[movies.size()];
-                for (int i = 0; i < movies.size(); i++) {
-                    Movies currentMovie = movies.get(i);
-                    posters[i] = currentMovie.getPoster();
+                List<Movies> data = null;
+                try {
+                    data = MovieJsonUtils.getMovieThumbnail(networkResponse, MainActivity.this);
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
 
-                mLoading.setVisibility(View.INVISIBLE);
-                mRecyclerView.setAdapter(new MoviesAdapter(posters, MainActivity.this));
-                showMovies();
-            } else
-                showError(ERROR);
-        }
+                return data;
+            }
+
+            @Override
+            public void deliverResult(@Nullable List<Movies> data) {
+                mMovieData = data;
+                super.deliverResult(data);
+            }
+        };
+    }
+
+    @Override
+    public void onLoadFinished(@NonNull Loader<List<Movies>> loader, List<Movies> data) {
+        if (data != null) {
+            mMoviesData = data;
+
+            String[] posters = new String[data.size()];
+            for (int i = 0; i < data.size(); i++) {
+                Movies currentMovie = data.get(i);
+                posters[i] = currentMovie.getPoster();
+            }
+
+            mLoading.setVisibility(View.INVISIBLE);
+            mRecyclerView.setAdapter(new MoviesAdapter(posters, MainActivity.this));
+            showMovies();
+        } else
+            showError(ERROR);
+    }
+
+    @Override
+    public void onLoaderReset(@NonNull Loader<List<Movies>> loader) {
+
     }
 
     @Override
