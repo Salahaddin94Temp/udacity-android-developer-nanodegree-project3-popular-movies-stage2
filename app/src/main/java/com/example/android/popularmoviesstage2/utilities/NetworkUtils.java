@@ -20,15 +20,36 @@ public final class NetworkUtils {
     // TODO: Add your API Key here
     private static final String API_KEY = BuildConfig.THE_MOVIE_DB_API_KEY;
 
-    private static final String MOVIE_BASE_URL = "http://api.themoviedb.org/3/movie/";
+    private static final String MOVIE_BASE_URL = "https://api.themoviedb.org/3/movie/";
+
     private static final String POPULAR_PATH = "popular";
     private static final String TOP_RATED_PATH = "top_rated";
     private static final String TRAILER_PATH = "videos";
+    private static final String REVIEWS_PATH = "reviews";
+
     private static final String API_PARAM = "api_key";
 
     private static URL getUrl(String path) {
 
         Uri uri = Uri.parse(MOVIE_BASE_URL).buildUpon()
+                .appendPath(path)
+                .appendQueryParameter(API_PARAM, API_KEY)
+                .build();
+
+        URL url = null;
+        try {
+            url = new URL(uri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+        return url;
+    }
+
+    private static URL getUrl(String movieId, String path) {
+
+        Uri uri = Uri.parse(MOVIE_BASE_URL).buildUpon()
+                .appendPath(movieId)
                 .appendPath(path)
                 .appendQueryParameter(API_PARAM, API_KEY)
                 .build();
@@ -56,6 +77,27 @@ public final class NetworkUtils {
         }
 
         URL url = getUrl(path);
+
+        OkHttpClient client = new OkHttpClient();
+
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+
+        try {
+            Response response = client.newCall(request).execute();
+            return response.body().string();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return "";
+    }
+
+    public static String getTrailer(String movieId) {
+
+        URL url = getUrl(movieId, TRAILER_PATH);
 
         OkHttpClient client = new OkHttpClient();
 

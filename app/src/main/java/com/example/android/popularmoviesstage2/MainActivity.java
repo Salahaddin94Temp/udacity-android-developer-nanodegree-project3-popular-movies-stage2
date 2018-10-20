@@ -38,14 +38,13 @@ public class MainActivity extends AppCompatActivity implements
     private static final int POPULAR_LOADER_ID = 1;
     private static final int TOP_RATED_LOADER_ID = 2;
 
-    public static final int POPULAR = 1;
-    public static final int TOP_RATED = 2;
+    public static final int POPULAR = 3;
+    public static final int TOP_RATED = 4;
     private int mSort;
     private final String SAVE = "save";
 
     private final int NO_INTERNET = 1;
     private final int ERROR = 2;
-
 
     private List<Movies> mMoviesData;
 
@@ -54,12 +53,11 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mErrorText = findViewById(R.id.error_message);
-        mLoading = findViewById(R.id.loading_indicator);
+        mErrorText = findViewById(R.id.tv_error_message);
+        mLoading = findViewById(R.id.pb_loading_indicator);
 
         mRecyclerView = findViewById(R.id.rv_movies);
         mRecyclerView.setHasFixedSize(true);
-
         mRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
 
         if (savedInstanceState != null)
@@ -98,13 +96,14 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onItemClick(int click) {
         Movies currentMovie = mMoviesData.get(click);
+        String id = String.valueOf(currentMovie.getId());
         String title = currentMovie.getTitle();
         String poster = currentMovie.getPoster();
         String plot = currentMovie.getPlot();
         Double rating = currentMovie.getRating();
         String releaseDate = currentMovie.getReleaseDate();
 
-        String[] movieDetail = {title, poster, plot, String.valueOf(rating), releaseDate};
+        String[] movieDetail = {id, title, poster, plot, String.valueOf(rating), releaseDate};
 
         Intent intent = new Intent(this, MovieDetail.class);
         intent.putExtra(Intent.EXTRA_TEXT, movieDetail);
@@ -161,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements
 
                 List<Movies> data = null;
                 try {
-                    data = MovieJsonUtils.getMovieThumbnail(networkResponse, MainActivity.this);
+                    data = MovieJsonUtils.getMovieDetails(networkResponse, MainActivity.this);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
