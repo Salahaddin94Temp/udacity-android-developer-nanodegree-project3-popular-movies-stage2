@@ -1,6 +1,7 @@
 package com.example.android.popularmoviesstage2;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -31,6 +32,7 @@ public class MovieDetail extends AppCompatActivity implements
     private static final int LOADER_ID = 10;
 
     final String BASE_IMAGE_URL = "http://image.tmdb.org/t/p/w342/";
+    final String YOUTUBE_URL = "http://www.youtube.com/watch?v=";
 
     private String mMovieId;
     private String[][] mTrailerData;
@@ -80,6 +82,15 @@ public class MovieDetail extends AppCompatActivity implements
     @Override
     public void onItemClick(int click) {
 
+        String currentTrailer = mTrailerData[click][0];
+
+        Uri uri = Uri.parse(YOUTUBE_URL + currentTrailer);
+
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(uri);
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivity(intent);
+        }
     }
 
     @NonNull
@@ -122,7 +133,7 @@ public class MovieDetail extends AppCompatActivity implements
 
     @Override
     public void onLoadFinished(@NonNull Loader<String[][]> loader, String[][] data) {
-        if (data != null) {
+        if (data != null && data.length > 0) {
             mTrailerData = data;
 
             String[] trailerNames = new String[data.length];
