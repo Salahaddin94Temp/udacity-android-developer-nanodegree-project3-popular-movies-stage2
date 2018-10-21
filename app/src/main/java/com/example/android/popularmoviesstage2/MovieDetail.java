@@ -1,6 +1,10 @@
 package com.example.android.popularmoviesstage2;
 
+import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -12,9 +16,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.example.android.popularmoviesstage2.adapters.ReviewsAdapter;
+import com.example.android.popularmoviesstage2.adapters.TrailersAdapter;
+import com.example.android.popularmoviesstage2.database.AppDatabase;
+import com.example.android.popularmoviesstage2.database.MovieEntry;
 import com.example.android.popularmoviesstage2.utilities.MovieJsonUtils;
 import com.example.android.popularmoviesstage2.utilities.NetworkUtils;
 import com.squareup.picasso.Picasso;
@@ -30,6 +40,7 @@ public class MovieDetail extends AppCompatActivity implements
 
     private TextView mTitle, mPlot, mRating, mReleaseDate, mTrailer, mReview;
     private ImageView mPoster;
+    private CheckBox mFavorite;
     private View mTrailerLine, mReviewLine;
     private RecyclerView mTrailerList;
     private RecyclerView mReviewList;
@@ -41,17 +52,100 @@ public class MovieDetail extends AppCompatActivity implements
 
     private String mMovieId;
     private String[][] mTrailerData;
+    private boolean mIsFavorite;
+
+    private AppDatabase mDb;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movie_detail);
 
+        mDb = AppDatabase.getsInstance(this);
+
+        initializeUi();
+
+        final Intent intent = getIntent();
+        if (intent != null) {
+            String[] movieDetail = intent.getStringArrayExtra(Intent.EXTRA_TEXT);
+
+            mMovieId = movieDetail[0];
+
+            populateUI(movieDetail);
+            loadOnlineDetails();
+
+            final MovieEntry movieEntry = (MovieEntry) intent.getSerializableExtra(Intent.EXTRA_LOCAL_ONLY);
+            mFavorite.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    if (b) {
+                        AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                Cursor cursor = mDb.favoriteDao().getFavorite(Integer.parseInt(mMovieId));
+                                if (cursor.getCount() > 0)
+                                    return;
+
+                                mDb.favoriteDao().insertFavorite(movieEntry);
+                            }
+                        });
+                    } else {
+                        AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                mDb.favoriteDao().deleteFavorite(movieEntry);
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    }
+
+    private void populateUI(String[] movieDetail) {
+        final String title = movieDetail[1];
+        mTitle.setText(title);
+
+        final String poster = movieDetail[2];
+        String posterUrl = BASE_IMAGE_URL + poster;
+        Picasso.get().load(posterUrl)
+                .placeholder(R.drawable.ic_launcher_foreground)
+                .error(R.drawable.ic_launcher_foreground)
+                .into(mPoster);
+
+        final String plot = movieDetail[3];
+        mPlot.setText(plot);
+
+        final String rating = movieDetail[4];
+        if (!rating.equals("-1.0"))
+            mRating.setText(rating);
+        else
+            mRating.setText("N/A");
+
+        final String releaseDate = movieDetail[5];
+        mReleaseDate.setText(releaseDate);
+
+        AppExecutors.getInstance().diskIO().execute(new Runnable() {
+            @Override
+            public void run() {
+                Cursor cursor = mDb.favoriteDao().getFavorite(Integer.parseInt(mMovieId));
+                if (cursor.getCount() > 0) {
+                    mIsFavorite = true;
+                } else
+                    mIsFavorite = false;
+
+                mFavorite.setChecked(mIsFavorite);
+            }
+        });
+    }
+
+    private void initializeUi() {
         mTitle = findViewById(R.id.tv_movie_title);
         mPoster = findViewById(R.id.iv_movie_poster);
         mPlot = findViewById(R.id.tv_plot_synopsis);
         mRating = findViewById(R.id.tv_average_rating);
         mReleaseDate = findViewById(R.id.tv_release_date);
+        mFavorite = findViewById(R.id.cb_favorite);
         mTrailerLine = findViewById(R.id.v_trailer_line);
         mTrailer = findViewById(R.id.tv_trailers);
         mReviewLine = findViewById(R.id.v_review_line);
@@ -60,36 +154,24 @@ public class MovieDetail extends AppCompatActivity implements
         mTrailerList = findViewById(R.id.rv_trailers);
         mTrailerList.setHasFixedSize(true);
         mTrailerList.setLayoutManager(new LinearLayoutManager(this));
+        mTrailerList.setNestedScrollingEnabled(false);
 
         mReviewList = findViewById(R.id.rv_reviews);
         mReviewList.setHasFixedSize(true);
         mReviewList.setLayoutManager(new LinearLayoutManager(this));
         mReviewList.setNestedScrollingEnabled(false);
+    }
 
-        Intent intent = getIntent();
-        if (intent != null) {
-            String[] movieDetail = intent.getStringArrayExtra(Intent.EXTRA_TEXT);
+    private void loadOnlineDetails() {
 
-            mMovieId = movieDetail[0];
-            getSupportLoaderManager().initLoader(LOADER_ID, null, this);
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
-            mTitle.setText(movieDetail[1]);
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        if (!isConnected)
+            return;
 
-            String posterUrl = BASE_IMAGE_URL + movieDetail[2];
-            Picasso.get().load(posterUrl)
-                    .placeholder(R.drawable.ic_launcher_foreground)
-                    .error(R.drawable.ic_launcher_foreground)
-                    .into(mPoster);
-
-            mPlot.setText(movieDetail[3]);
-
-            if (!movieDetail[4].equals("-1.0"))
-                mRating.setText(movieDetail[4]);
-            else
-                mRating.setText("N/A");
-
-            mReleaseDate.setText(movieDetail[5]);
-        }
+        getSupportLoaderManager().initLoader(LOADER_ID, null, this);
     }
 
     @Override

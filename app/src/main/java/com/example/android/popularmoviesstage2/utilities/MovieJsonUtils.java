@@ -2,7 +2,7 @@ package com.example.android.popularmoviesstage2.utilities;
 
 import android.content.Context;
 
-import com.example.android.popularmoviesstage2.Movies;
+import com.example.android.popularmoviesstage2.database.MovieEntry;
 import com.example.android.popularmoviesstage2.R;
 
 import org.json.JSONArray;
@@ -17,7 +17,7 @@ public final class MovieJsonUtils {
     private static final String ERROR = "status_code";
     private static final String RESULTS = "results";
 
-    public static List<Movies> getMovieDetails(String mainJson, Context context) throws JSONException {
+    public static List<MovieEntry> getMovieDetails(String mainJson, Context context) throws JSONException {
 
         final String ID = "id";
         final String TITLE = "original_title";
@@ -38,7 +38,7 @@ public final class MovieJsonUtils {
         else
             return null;
 
-        List<Movies> movies = new ArrayList<>();
+        List<MovieEntry> movies = new ArrayList<>();
 
         for (int i = 0; i < results.length(); i++) {
             JSONObject result = results.getJSONObject(i);
@@ -50,7 +50,7 @@ public final class MovieJsonUtils {
             Double rating = result.optDouble(RATING, -1.0);
             String releaseDate = result.optString(RELEASE_DATE, "N/A");
 
-            movies.add(new Movies(id, title, poster, plot, rating, releaseDate));
+            movies.add(new MovieEntry(id, title, poster, plot, rating, releaseDate));
         }
 
         return movies;

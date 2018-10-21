@@ -1,4 +1,4 @@
-package com.example.android.popularmoviesstage2;
+package com.example.android.popularmoviesstage2.adapters;
 
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
@@ -7,19 +7,24 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import com.example.android.popularmoviesstage2.R;
+import com.example.android.popularmoviesstage2.database.MovieEntry;
 import com.squareup.picasso.Picasso;
+
+import java.util.List;
 
 public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieHolder> {
 
-    private String[] mMovieData;
     private final ItemClickListener mOnClickListener;
+    private List<MovieEntry> mMovieEntries;
+
+    private static final String BASE_IMAGE_URL = "http://image.tmdb.org/t/p/w185/";
 
     public interface ItemClickListener {
         void onItemClick(int click);
     }
 
-    MoviesAdapter(String[] movieData, ItemClickListener clickListener) {
-        mMovieData = movieData;
+    public MoviesAdapter(ItemClickListener clickListener) {
         mOnClickListener = clickListener;
     }
 
@@ -36,9 +41,9 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieHolde
     @Override
     public void onBindViewHolder(@NonNull MovieHolder holder, int position) {
 
-        final String BASE_IMAGE_URL = "http://image.tmdb.org/t/p/w185/";
+        MovieEntry currentMovie = mMovieEntries.get(position);
 
-        String currentThumbnail = BASE_IMAGE_URL + mMovieData[position];
+        String currentThumbnail = BASE_IMAGE_URL + currentMovie.getPoster();
         Picasso.get().load(currentThumbnail)
                 .placeholder(R.drawable.ic_launcher_foreground)
                 .error(R.drawable.ic_launcher_foreground)
@@ -47,7 +52,18 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieHolde
 
     @Override
     public int getItemCount() {
-        return mMovieData.length;
+        if (mMovieEntries == null)
+            return 0;
+        return mMovieEntries.size();
+    }
+
+    public List<MovieEntry> getMovies() {
+        return mMovieEntries;
+    }
+
+    public void setMovies(List<MovieEntry> movieEntries) {
+        mMovieEntries = movieEntries;
+        notifyDataSetChanged();
     }
 
     class MovieHolder extends RecyclerView.ViewHolder implements View.OnClickListener {

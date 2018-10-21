@@ -77,6 +77,15 @@
                     android:layout_height="wrap_content"
                     android:textColor="@color/textColorPrimary"
                     tools:text="7.3" />
+
+                <CheckBox
+                    android:id="@+id/cb_favorite"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/add_to_favorites"
+                    android:textColor="@color/yellow"
+                    app:buttonTint="@color/yellow" />
             </LinearLayout>
         </LinearLayout>
 
@@ -117,7 +126,7 @@
             android:layout_marginLeft="8dp"
             android:layout_marginTop="8dp"
             android:text="@string/trailers_label"
-            android:textColor="@color/trailers"
+            android:textColor="@color/yellow"
             android:visibility="gone"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/v_trailer_line" />

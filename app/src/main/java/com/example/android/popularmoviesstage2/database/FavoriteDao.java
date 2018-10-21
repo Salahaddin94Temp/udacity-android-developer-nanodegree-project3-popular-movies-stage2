@@ -7,6 +7,7 @@ import android.arch.persistence.room.Insert;
 import android.arch.persistence.room.OnConflictStrategy;
 import android.arch.persistence.room.Query;
 import android.arch.persistence.room.Update;
+import android.database.Cursor;
 
 import java.util.List;
 
@@ -14,14 +15,17 @@ import java.util.List;
 public interface FavoriteDao {
 
     @Query("SELECT * FROM favorite_movie")
-    LiveData<List<FavoriteEntry>> loadAllFavorites();
+    LiveData<List<MovieEntry>> loadAllFavorites();
 
-    @Insert
-    void insertFavorite(FavoriteEntry favoriteEntry);
+    @Insert(onConflict = OnConflictStrategy.FAIL)
+    void insertFavorite(MovieEntry movieEntry);
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    void updateFavorite(FavoriteEntry favoriteEntry);
+    void updateFavorite(MovieEntry movieEntry);
 
     @Delete
-    void deleteFavorite(FavoriteEntry favoriteEntry);
+    void deleteFavorite(MovieEntry movieEntry);
+
+    @Query("SELECT * FROM favorite_movie WHERE movie_id = :movieId")
+    Cursor getFavorite(int movieId);
 }

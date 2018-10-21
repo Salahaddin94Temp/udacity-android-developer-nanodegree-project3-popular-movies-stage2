@@ -1,5 +1,7 @@
 package com.example.android.popularmoviesstage2;
 
+import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
@@ -20,8 +22,11 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.example.android.popularmoviesstage2.adapters.MoviesAdapter;
+import com.example.android.popularmoviesstage2.database.MovieEntry;
 import com.example.android.popularmoviesstage2.utilities.MovieJsonUtils;
 import com.example.android.popularmoviesstage2.utilities.NetworkUtils;
+import com.facebook.stetho.Stetho;
 
 import org.json.JSONException;
 
@@ -29,29 +34,35 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements
         MoviesAdapter.ItemClickListener,
-        LoaderManager.LoaderCallbacks<List<Movies>> {
+        LoaderManager.LoaderCallbacks<List<MovieEntry>> {
 
     private TextView mErrorText;
     private ProgressBar mLoading;
     private RecyclerView mRecyclerView;
+    private MoviesAdapter mAdapter;
 
     private static final int POPULAR_LOADER_ID = 1;
     private static final int TOP_RATED_LOADER_ID = 2;
 
     public static final int POPULAR = 3;
     public static final int TOP_RATED = 4;
-    private int mSort;
-    private final String SAVE = "save";
+    public static final int FAVORITES = 5;
 
     private final int NO_INTERNET = 1;
     private final int ERROR = 2;
+    private final int EMPTY_FAVORITES = 3;
 
-    private List<Movies> mMoviesData;
+    private static final String SAVE = "save";
+
+    private int mSort;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // TODO: Remove before submit
+        Stetho.initializeWithDefaults(this);
 
         mErrorText = findViewById(R.id.tv_error_message);
         mLoading = findViewById(R.id.pb_loading_indicator);
@@ -59,6 +70,9 @@ public class MainActivity extends AppCompatActivity implements
         mRecyclerView = findViewById(R.id.rv_movies);
         mRecyclerView.setHasFixedSize(true);
         mRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+
+        mAdapter = new MoviesAdapter(this);
+        mRecyclerView.setAdapter(mAdapter);
 
         if (savedInstanceState != null)
             mSort = savedInstanceState.getInt(SAVE);
@@ -76,12 +90,16 @@ public class MainActivity extends AppCompatActivity implements
 
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
         boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
-        if (!isConnected) {
+        if (!isConnected && sort != FAVORITES) {
             showError(NO_INTERNET);
             return;
         }
 
         switch (sort) {
+            case FAVORITES:
+                mSort = FAVORITES;
+                loadFavorites();
+                break;
             case TOP_RATED:
                 mSort = TOP_RATED;
                 getSupportLoaderManager().initLoader(TOP_RATED_LOADER_ID, null, this);
@@ -93,10 +111,29 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+    private void loadFavorites() {
+        MainViewModel viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
+        viewModel.getFavorites().observe(this, new Observer<List<MovieEntry>>() {
+            @Override
+            public void onChanged(@Nullable List<MovieEntry> favoriteEntries) {
+                if (favoriteEntries != null) {
+                    if (favoriteEntries.size() > 0) {
+                        mLoading.setVisibility(View.INVISIBLE);
+                        mAdapter.setMovies(favoriteEntries);
+                        showMovies();
+                    } else
+                        showError(EMPTY_FAVORITES);
+                }
+            }
+        });
+    }
+
     @Override
     public void onItemClick(int click) {
-        Movies currentMovie = mMoviesData.get(click);
-        String id = String.valueOf(currentMovie.getId());
+        List<MovieEntry> movies = mAdapter.getMovies();
+        MovieEntry currentMovie = movies.get(click);
+
+        String id = String.valueOf(currentMovie.getMovieId());
         String title = currentMovie.getTitle();
         String poster = currentMovie.getPoster();
         String plot = currentMovie.getPlot();
@@ -107,6 +144,7 @@ public class MainActivity extends AppCompatActivity implements
 
         Intent intent = new Intent(this, MovieDetail.class);
         intent.putExtra(Intent.EXTRA_TEXT, movieDetail);
+        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, currentMovie);
         startActivity(intent);
     }
 
@@ -114,6 +152,9 @@ public class MainActivity extends AppCompatActivity implements
         String errorMessage;
 
         switch (type) {
+            case EMPTY_FAVORITES:
+                errorMessage = getString(R.string.empty_favorites);
+                break;
             case NO_INTERNET:
                 errorMessage = getString(R.string.no_internet);
                 break;
@@ -135,10 +176,10 @@ public class MainActivity extends AppCompatActivity implements
 
     @NonNull
     @Override
-    public Loader<List<Movies>> onCreateLoader(int id, @Nullable Bundle args) {
-        return new AsyncTaskLoader<List<Movies>>(this) {
+    public Loader<List<MovieEntry>> onCreateLoader(int id, @Nullable Bundle args) {
+        return new AsyncTaskLoader<List<MovieEntry>>(this) {
 
-            List<Movies> mMovieData = null;
+            List<MovieEntry> mMovieData = null;
 
             @Override
             protected void onStartLoading() {
@@ -154,11 +195,11 @@ public class MainActivity extends AppCompatActivity implements
 
             @Nullable
             @Override
-            public List<Movies> loadInBackground() {
+            public List<MovieEntry> loadInBackground() {
 
                 String networkResponse = NetworkUtils.getMovieList(mSort);
 
-                List<Movies> data = null;
+                List<MovieEntry> data = null;
                 try {
                     data = MovieJsonUtils.getMovieDetails(networkResponse, MainActivity.this);
                 } catch (JSONException e) {
@@ -169,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements
             }
 
             @Override
-            public void deliverResult(@Nullable List<Movies> data) {
+            public void deliverResult(@Nullable List<MovieEntry> data) {
                 mMovieData = data;
                 super.deliverResult(data);
             }
@@ -177,25 +218,18 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onLoadFinished(@NonNull Loader<List<Movies>> loader, List<Movies> data) {
+    public void onLoadFinished
+            (@NonNull Loader<List<MovieEntry>> loader, List<MovieEntry> data) {
         if (data != null) {
-            mMoviesData = data;
-
-            String[] posters = new String[data.size()];
-            for (int i = 0; i < data.size(); i++) {
-                Movies currentMovie = data.get(i);
-                posters[i] = currentMovie.getPoster();
-            }
-
             mLoading.setVisibility(View.INVISIBLE);
-            mRecyclerView.setAdapter(new MoviesAdapter(posters, MainActivity.this));
+            mAdapter.setMovies(data);
             showMovies();
         } else
             showError(ERROR);
     }
 
     @Override
-    public void onLoaderReset(@NonNull Loader<List<Movies>> loader) {
+    public void onLoaderReset(@NonNull Loader<List<MovieEntry>> loader) {
 
     }
 
@@ -211,11 +245,24 @@ public class MainActivity extends AppCompatActivity implements
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.sort_popularity)
-            loadMovies(POPULAR);
-        else
-            loadMovies(TOP_RATED);
+        switch (id) {
+            case R.id.sort_popularity:
+                loadMovies(POPULAR);
+                break;
+            case R.id.sort_top_rated:
+                loadMovies(TOP_RATED);
+                break;
+            case R.id.show_favorites:
+                loadMovies(FAVORITES);
+        }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (mSort == FAVORITES)
+            loadFavorites();
     }
 }
