@@ -41,6 +41,8 @@ dependencies {
     implementation "android.arch.lifecycle:extensions:1.1.1"
     annotationProcessor "android.arch.lifecycle:compiler:1.1.1"
 
+    implementation 'com.google.code.gson:gson:2.8.5'
+
     // TODO: Remove before submit
     implementation 'com.facebook.stetho:stetho:1.5.0'
     implementation 'com.facebook.stetho:stetho-okhttp3:1.5.0'

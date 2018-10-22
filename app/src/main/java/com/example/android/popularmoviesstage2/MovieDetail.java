@@ -29,8 +29,6 @@ import com.example.android.popularmoviesstage2.utilities.MovieJsonUtils;
 import com.example.android.popularmoviesstage2.utilities.NetworkUtils;
 import com.squareup.picasso.Picasso;
 
-import org.json.JSONException;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -210,14 +208,12 @@ public class MovieDetail extends AppCompatActivity implements
                 String reviewResult = NetworkUtils.getReview(mMovieId);
 
                 List<String[][]> data = new ArrayList<>();
-                try {
-                    String[][] trailerData = MovieJsonUtils.getTrailers(trailerResult, MovieDetail.this);
-                    String[][] reviewData = MovieJsonUtils.getReviews(reviewResult, MovieDetail.this);
-                    data.add(0, trailerData);
-                    data.add(1, reviewData);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+
+                String[][] trailerData = MovieJsonUtils.getTrailers(trailerResult);
+                String[][] reviewData = MovieJsonUtils.getReviews(reviewResult);
+
+                data.add(0, trailerData);
+                data.add(1, reviewData);
 
                 return data;
             }

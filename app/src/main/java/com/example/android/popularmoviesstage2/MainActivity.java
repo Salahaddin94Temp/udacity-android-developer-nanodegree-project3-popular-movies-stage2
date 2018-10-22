@@ -28,8 +28,6 @@ import com.example.android.popularmoviesstage2.utilities.MovieJsonUtils;
 import com.example.android.popularmoviesstage2.utilities.NetworkUtils;
 import com.facebook.stetho.Stetho;
 
-import org.json.JSONException;
-
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements
@@ -198,13 +196,7 @@ public class MainActivity extends AppCompatActivity implements
             public List<MovieEntry> loadInBackground() {
 
                 String networkResponse = NetworkUtils.getMovieList(mSort);
-
-                List<MovieEntry> data = null;
-                try {
-                    data = MovieJsonUtils.getMovieDetails(networkResponse, MainActivity.this);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+                List<MovieEntry> data = MovieJsonUtils.getMovieDetails(networkResponse);
 
                 return data;
             }
@@ -218,8 +210,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onLoadFinished
-            (@NonNull Loader<List<MovieEntry>> loader, List<MovieEntry> data) {
+    public void onLoadFinished(@NonNull Loader<List<MovieEntry>> loader, List<MovieEntry> data) {
         if (data != null) {
             mLoading.setVisibility(View.INVISIBLE);
             mAdapter.setMovies(data);

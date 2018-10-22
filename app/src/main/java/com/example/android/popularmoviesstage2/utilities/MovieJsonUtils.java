@@ -1,54 +1,33 @@
 package com.example.android.popularmoviesstage2.utilities;
 
-import android.content.Context;
-
 import com.example.android.popularmoviesstage2.database.MovieEntry;
-import com.example.android.popularmoviesstage2.R;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.example.android.popularmoviesstage2.utilities.pojos.MovieDetailPojo;
+import com.example.android.popularmoviesstage2.utilities.pojos.MovieDetailPojo.Result;
+import com.example.android.popularmoviesstage2.utilities.pojos.ReviewPojo;
+import com.example.android.popularmoviesstage2.utilities.pojos.TrailerPojo;
+import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public final class MovieJsonUtils {
 
-    private static final String ERROR = "status_code";
-    private static final String RESULTS = "results";
+    public static List<MovieEntry> getMovieDetails(String mainJson) {
 
-    public static List<MovieEntry> getMovieDetails(String mainJson, Context context) throws JSONException {
-
-        final String ID = "id";
-        final String TITLE = "original_title";
-        final String POSTER = "poster_path";
-        final String PLOT = "overview";
-        final String RATING = "vote_average";
-        final String RELEASE_DATE = "release_date";
-
-        JSONObject root = new JSONObject(mainJson);
-
-        if (root.has(ERROR)) {
-            return null;
-        }
-
-        JSONArray results;
-        if (root.has(RESULTS))
-            results = root.getJSONArray(RESULTS);
-        else
+        List<Result> results = new Gson().fromJson(mainJson, MovieDetailPojo.class).getResults();
+        if (results == null)
             return null;
 
         List<MovieEntry> movies = new ArrayList<>();
+        for (int i = 0; i < results.size(); i++) {
+            Result result = results.get(i);
 
-        for (int i = 0; i < results.length(); i++) {
-            JSONObject result = results.getJSONObject(i);
-
-            int id = result.optInt(ID);
-            String title = result.optString(TITLE, context.getString(R.string.movie_title_placeholder));
-            String poster = result.optString(POSTER, "");
-            String plot = result.optString(PLOT, context.getString(R.string.movie_plot_placeholder));
-            Double rating = result.optDouble(RATING, -1.0);
-            String releaseDate = result.optString(RELEASE_DATE, "N/A");
+            int id = result.getId();
+            String title = result.getOriginalTitle();
+            String poster = result.getPosterPath();
+            String plot = result.getOverview();
+            Double rating = result.getVoteAverage();
+            String releaseDate = result.getReleaseDate();
 
             movies.add(new MovieEntry(id, title, poster, plot, rating, releaseDate));
         }
@@ -56,62 +35,40 @@ public final class MovieJsonUtils {
         return movies;
     }
 
-    public static String[][] getTrailers(String mainJson, Context context) throws JSONException {
+    public static String[][] getTrailers(String mainJson) {
 
-        final String KEY = "key";
-        final String NAME = "name";
-
-        JSONObject root = new JSONObject(mainJson);
-
-        if (root.has(ERROR)) {
-            return null;
-        }
-
-        JSONArray results;
-        if (root.has(RESULTS))
-            results = root.getJSONArray(RESULTS);
-        else
+        List<TrailerPojo.Result> results = new Gson().fromJson(mainJson, TrailerPojo.class).getResults();
+        if (results == null)
             return null;
 
-        String[][] data = new String[results.length()][2];
-        for (int i = 0; i < results.length(); i++) {
-            JSONObject result = results.getJSONObject(i);
+        String[][] data = new String[results.size()][2];
+        for (int i = 0; i < results.size(); i++) {
+            TrailerPojo.Result currentResult = results.get(i);
 
-            String key = result.optString(KEY, "");
+            String key = currentResult.getKey();
             data[i][0] = key;
 
-            String name = result.optString(NAME, context.getString(R.string.trailer_placeholder));
+            String name = currentResult.getName();
             data[i][1] = name;
         }
 
         return data;
     }
 
-    public static String[][] getReviews(String mainJson, Context context) throws JSONException {
+    public static String[][] getReviews(String mainJson) {
 
-        final String AUTHOR = "author";
-        final String CONTENT = "content";
-
-        JSONObject root = new JSONObject(mainJson);
-
-        if (root.has(ERROR)) {
-            return null;
-        }
-
-        JSONArray results;
-        if (root.has(RESULTS))
-            results = root.getJSONArray(RESULTS);
-        else
+        List<ReviewPojo.Result> results = new Gson().fromJson(mainJson, ReviewPojo.class).getResults();
+        if (results == null)
             return null;
 
-        String[][] data = new String[results.length()][2];
-        for (int i = 0; i < results.length(); i++) {
-            JSONObject result = results.getJSONObject(i);
+        String[][] data = new String[results.size()][2];
+        for (int i = 0; i < results.size(); i++) {
+            ReviewPojo.Result currentResult = results.get(i);
 
-            String author = result.optString(AUTHOR, context.getString(R.string.author_placeholder));
+            String author = currentResult.getAuthor();
             data[i][0] = author;
 
-            String content = result.optString(CONTENT, context.getString(R.string.content_placeholder));
+            String content = currentResult.getContent();
             data[i][1] = content;
         }
 
