@@ -3,6 +3,7 @@ package com.example.android.popularmoviesstage2;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.databinding.DataBindingUtil;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -14,17 +15,14 @@ import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.view.View;
-import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.example.android.popularmoviesstage2.adapters.ReviewsAdapter;
 import com.example.android.popularmoviesstage2.adapters.TrailersAdapter;
 import com.example.android.popularmoviesstage2.database.AppDatabase;
 import com.example.android.popularmoviesstage2.database.MovieEntry;
+import com.example.android.popularmoviesstage2.databinding.ActivityMovieDetailBinding;
 import com.example.android.popularmoviesstage2.utilities.MovieJsonUtils;
 import com.example.android.popularmoviesstage2.utilities.NetworkUtils;
 import com.squareup.picasso.Picasso;
@@ -36,12 +34,7 @@ public class MovieDetail extends AppCompatActivity implements
         TrailersAdapter.ItemClickListener,
         LoaderManager.LoaderCallbacks<List<String[][]>> {
 
-    private TextView mTitle, mPlot, mRating, mReleaseDate, mTrailer, mReview;
-    private ImageView mPoster;
-    private CheckBox mFavorite;
-    private View mTrailerLine, mReviewLine;
-    private RecyclerView mTrailerList;
-    private RecyclerView mReviewList;
+    private ActivityMovieDetailBinding mBinding;
 
     private static final int LOADER_ID = 10;
 
@@ -59,9 +52,17 @@ public class MovieDetail extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movie_detail);
 
-        mDb = AppDatabase.getsInstance(this);
+        mBinding = DataBindingUtil.setContentView(this, R.layout.activity_movie_detail);
 
-        initializeUi();
+        mBinding.rvTrailers.setHasFixedSize(true);
+        mBinding.rvTrailers.setLayoutManager(new LinearLayoutManager(this));
+        mBinding.rvTrailers.setNestedScrollingEnabled(false);
+
+        mBinding.rvReviews.setHasFixedSize(true);
+        mBinding.rvReviews.setLayoutManager(new LinearLayoutManager(this));
+        mBinding.rvReviews.setNestedScrollingEnabled(false);
+
+        mDb = AppDatabase.getsInstance(this);
 
         final Intent intent = getIntent();
         if (intent != null) {
@@ -73,7 +74,7 @@ public class MovieDetail extends AppCompatActivity implements
             loadOnlineDetails();
 
             final MovieEntry movieEntry = (MovieEntry) intent.getSerializableExtra(Intent.EXTRA_LOCAL_ONLY);
-            mFavorite.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            mBinding.cbFavorite.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                     if (b) {
@@ -102,69 +103,47 @@ public class MovieDetail extends AppCompatActivity implements
 
     private void populateUI(String[] movieDetail) {
         final String title = movieDetail[1];
-        mTitle.setText(title);
+        mBinding.tvMovieTitle.setText(title);
 
         final String poster = movieDetail[2];
         String posterUrl = BASE_IMAGE_URL + poster;
         Picasso.get().load(posterUrl)
                 .placeholder(R.drawable.ic_launcher_foreground)
                 .error(R.drawable.ic_launcher_foreground)
-                .into(mPoster);
+                .into(mBinding.ivMoviePoster);
 
         final String plot = movieDetail[3];
-        mPlot.setText(plot);
+        mBinding.tvPlotSynopsis.setText(plot);
 
         final String rating = movieDetail[4];
         if (!rating.equals("-1.0"))
-            mRating.setText(rating);
+            mBinding.tvAverageRating.setText(rating);
         else
-            mRating.setText("N/A");
+            mBinding.tvAverageRating.setText("N/A");
 
         final String releaseDate = movieDetail[5];
-        mReleaseDate.setText(releaseDate);
+        mBinding.tvReleaseDate.setText(releaseDate);
 
         AppExecutors.getInstance().diskIO().execute(new Runnable() {
             @Override
             public void run() {
                 Cursor cursor = mDb.favoriteDao().getFavorite(Integer.parseInt(mMovieId));
-                if (cursor.getCount() > 0) {
-                    mIsFavorite = true;
-                } else
-                    mIsFavorite = false;
+                mIsFavorite = cursor.getCount() > 0;
 
-                mFavorite.setChecked(mIsFavorite);
+                mBinding.cbFavorite.setChecked(mIsFavorite);
             }
         });
-    }
-
-    private void initializeUi() {
-        mTitle = findViewById(R.id.tv_movie_title);
-        mPoster = findViewById(R.id.iv_movie_poster);
-        mPlot = findViewById(R.id.tv_plot_synopsis);
-        mRating = findViewById(R.id.tv_average_rating);
-        mReleaseDate = findViewById(R.id.tv_release_date);
-        mFavorite = findViewById(R.id.cb_favorite);
-        mTrailerLine = findViewById(R.id.v_trailer_line);
-        mTrailer = findViewById(R.id.tv_trailers);
-        mReviewLine = findViewById(R.id.v_review_line);
-        mReview = findViewById(R.id.tv_review);
-
-        mTrailerList = findViewById(R.id.rv_trailers);
-        mTrailerList.setHasFixedSize(true);
-        mTrailerList.setLayoutManager(new LinearLayoutManager(this));
-        mTrailerList.setNestedScrollingEnabled(false);
-
-        mReviewList = findViewById(R.id.rv_reviews);
-        mReviewList.setHasFixedSize(true);
-        mReviewList.setLayoutManager(new LinearLayoutManager(this));
-        mReviewList.setNestedScrollingEnabled(false);
     }
 
     private void loadOnlineDetails() {
 
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        NetworkInfo activeNetwork = null;
+        if (cm != null) {
+            activeNetwork = cm.getActiveNetworkInfo();
+        }
+
         boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
         if (!isConnected)
             return;
@@ -241,17 +220,17 @@ public class MovieDetail extends AppCompatActivity implements
                     trailerNames[i] = currentTrailer;
                 }
 
-                mTrailerLine.setVisibility(View.VISIBLE);
-                mTrailer.setVisibility(View.VISIBLE);
-                mTrailerList.setVisibility(View.VISIBLE);
-                mTrailerList.setAdapter(new TrailersAdapter(trailerNames, MovieDetail.this));
+                mBinding.vTrailerLine.setVisibility(View.VISIBLE);
+                mBinding.tvTrailers.setVisibility(View.VISIBLE);
+                mBinding.rvTrailers.setVisibility(View.VISIBLE);
+                mBinding.rvTrailers.setAdapter(new TrailersAdapter(trailerNames, MovieDetail.this));
             }
 
             if (reviewData != null && reviewData.length > 0) {
-                mReviewLine.setVisibility(View.VISIBLE);
-                mReview.setVisibility(View.VISIBLE);
-                mReviewList.setVisibility(View.VISIBLE);
-                mReviewList.setAdapter(new ReviewsAdapter(reviewData));
+                mBinding.vReviewLine.setVisibility(View.VISIBLE);
+                mBinding.tvReview.setVisibility(View.VISIBLE);
+                mBinding.rvReviews.setVisibility(View.VISIBLE);
+                mBinding.rvReviews.setAdapter(new ReviewsAdapter(reviewData));
             }
         }
     }
