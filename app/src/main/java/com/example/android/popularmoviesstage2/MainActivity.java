@@ -12,7 +12,6 @@ import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -24,7 +23,6 @@ import com.example.android.popularmoviesstage2.adapters.MoviesAdapter;
 import com.example.android.popularmoviesstage2.database.MovieEntry;
 import com.example.android.popularmoviesstage2.utilities.MovieJsonUtils;
 import com.example.android.popularmoviesstage2.utilities.NetworkUtils;
-import com.facebook.stetho.Stetho;
 
 import java.util.List;
 
@@ -56,9 +54,6 @@ public class MainActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        // TODO: Remove before submit
-        Stetho.initializeWithDefaults(this);
 
         mErrorText = findViewById(R.id.tv_error_message);
         mLoading = findViewById(R.id.pb_loading_indicator);
@@ -250,9 +245,8 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onResume() {
         super.onResume();
-        if (mSort == FAVORITES) {
-            Log.v("hello", "Resume");
+        if (mSort == FAVORITES)
             loadFavorites();
-        }
+
     }
 }

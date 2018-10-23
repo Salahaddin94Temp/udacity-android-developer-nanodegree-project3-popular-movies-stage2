@@ -8,15 +8,10 @@
     <string name="error">There\'s an error.</string>
     <string name="rating_text">\nAverage rating:</string>
     <string name="release_text">Release date:</string>
-    <string name="movie_plot_placeholder">No movie overview available.</string>
-    <string name="movie_title_placeholder">No movie title.</string>
 
     <string name="menu_favorites">Favorites</string>
     <string name="trailers_label">Trailers:</string>
     <string name="reviews_label">Reviews:</string>
     <string name="add_to_favorites">Add to Favorites</string>
     <string name="empty_favorites">You haven\'t added any movies to the Favorites.</string>
-    <string name="trailer_placeholder">Trailer</string>
-    <string name="author_placeholder">No Author</string>
-    <string name="content_placeholder">No review found.</string>
 </resources>

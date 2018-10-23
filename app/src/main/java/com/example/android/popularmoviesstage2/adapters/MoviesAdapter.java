@@ -41,7 +41,7 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieHolde
     @Override
     public void onBindViewHolder(@NonNull MovieHolder holder, int position) {
 
-        MovieEntry currentMovie = mMovieEntries.get(position);
+        MovieEntry currentMovie = mMovieEntries.get(holder.getAdapterPosition());
 
         String currentThumbnail = BASE_IMAGE_URL + currentMovie.getPoster();
         Picasso.get().load(currentThumbnail)

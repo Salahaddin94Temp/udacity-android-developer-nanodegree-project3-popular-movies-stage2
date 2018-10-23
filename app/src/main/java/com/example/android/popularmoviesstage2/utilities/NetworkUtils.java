@@ -6,7 +6,6 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 
 import com.example.android.popularmoviesstage2.BuildConfig;
-import com.facebook.stetho.okhttp3.StethoInterceptor;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -70,9 +69,7 @@ public final class NetworkUtils {
 
     private static String getResponse(URL url) {
 
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addNetworkInterceptor(new StethoInterceptor()) // TODO: Remove before submit
-                .build();
+        OkHttpClient client = new OkHttpClient.Builder().build();
 
         Request request = new Request.Builder()
                 .url(url)
