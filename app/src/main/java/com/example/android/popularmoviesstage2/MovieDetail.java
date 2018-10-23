@@ -1,11 +1,8 @@
 package com.example.android.popularmoviesstage2;
 
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.databinding.DataBindingUtil;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -71,7 +68,9 @@ public class MovieDetail extends AppCompatActivity implements
             mMovieId = movieDetail[0];
 
             populateUI(movieDetail);
-            loadOnlineDetails();
+
+            if (NetworkUtils.hasInternet(this))
+                getSupportLoaderManager().initLoader(LOADER_ID, null, this);
 
             final MovieEntry movieEntry = (MovieEntry) intent.getSerializableExtra(Intent.EXTRA_LOCAL_ONLY);
             mBinding.cbFavorite.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -133,22 +132,6 @@ public class MovieDetail extends AppCompatActivity implements
                 mBinding.cbFavorite.setChecked(mIsFavorite);
             }
         });
-    }
-
-    private void loadOnlineDetails() {
-
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-
-        NetworkInfo activeNetwork = null;
-        if (cm != null) {
-            activeNetwork = cm.getActiveNetworkInfo();
-        }
-
-        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
-        if (!isConnected)
-            return;
-
-        getSupportLoaderManager().initLoader(LOADER_ID, null, this);
     }
 
     @Override

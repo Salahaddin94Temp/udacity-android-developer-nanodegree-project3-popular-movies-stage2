@@ -1,5 +1,8 @@
 package com.example.android.popularmoviesstage2.utilities;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 
 import com.example.android.popularmoviesstage2.BuildConfig;
@@ -65,6 +68,29 @@ public final class NetworkUtils {
         return url;
     }
 
+    private static String getResponse(URL url) {
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addNetworkInterceptor(new StethoInterceptor()) // TODO: Remove before submit
+                .build();
+
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+
+        try {
+            Response response = client.newCall(request).execute();
+            if (response.body() != null) {
+                return response.body().string();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return "";
+    }
+
     public static String getMovieList(int pathType) {
 
         String path;
@@ -96,23 +122,13 @@ public final class NetworkUtils {
         return getResponse(url);
     }
 
-    private static String getResponse(URL url) {
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addNetworkInterceptor(new StethoInterceptor()) // TODO: Remove before submit
-                .build();
+    public static boolean hasInternet(Context context) {
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
 
-        Request request = new Request.Builder()
-                .url(url)
-                .get()
-                .build();
-
-        try {
-            Response response = client.newCall(request).execute();
-            return response.body().string();
-        } catch (IOException e) {
-            e.printStackTrace();
+        NetworkInfo activeNetwork = null;
+        if (cm != null) {
+            activeNetwork = cm.getActiveNetworkInfo();
         }
-
-        return "";
+        return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
     }
 }

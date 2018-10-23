@@ -14,6 +14,7 @@
         android:theme="@style/AppTheme">
         <activity
             android:name="com.example.android.popularmoviesstage2.MainActivity"
+            android:launchMode="singleTop"
             android:theme="@style/AppTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

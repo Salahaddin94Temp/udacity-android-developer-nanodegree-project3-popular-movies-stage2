@@ -2,10 +2,7 @@ package com.example.android.popularmoviesstage2;
 
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
-import android.content.Context;
 import android.content.Intent;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -15,6 +12,7 @@ import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -74,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements
 
         if (savedInstanceState != null)
             mSort = savedInstanceState.getInt(SAVE);
+
         loadMovies(mSort);
     }
 
@@ -84,14 +83,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void loadMovies(int sort) {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
-        if (!isConnected && sort != FAVORITES) {
-            showError(NO_INTERNET);
-            return;
-        }
 
         switch (sort) {
             case FAVORITES:
@@ -100,21 +91,27 @@ public class MainActivity extends AppCompatActivity implements
                 break;
             case TOP_RATED:
                 mSort = TOP_RATED;
-                getSupportLoaderManager().initLoader(TOP_RATED_LOADER_ID, null, this);
+                if (NetworkUtils.hasInternet(this))
+                    getSupportLoaderManager().initLoader(TOP_RATED_LOADER_ID, null, this);
+                else
+                    showError(NO_INTERNET);
                 break;
             case POPULAR:
             default:
                 mSort = POPULAR;
-                getSupportLoaderManager().initLoader(POPULAR_LOADER_ID, null, this);
+                if (NetworkUtils.hasInternet(this))
+                    getSupportLoaderManager().initLoader(POPULAR_LOADER_ID, null, this);
+                else
+                    showError(NO_INTERNET);
         }
     }
 
     private void loadFavorites() {
-        MainViewModel viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
+        final FavoriteViewModel viewModel = ViewModelProviders.of(this).get(FavoriteViewModel.class);
         viewModel.getFavorites().observe(this, new Observer<List<MovieEntry>>() {
             @Override
             public void onChanged(@Nullable List<MovieEntry> favoriteEntries) {
-                if (favoriteEntries != null) {
+                if (favoriteEntries != null && mSort == FAVORITES) {
                     if (favoriteEntries.size() > 0) {
                         mLoading.setVisibility(View.INVISIBLE);
                         mAdapter.setMovies(favoriteEntries);
@@ -124,26 +121,6 @@ public class MainActivity extends AppCompatActivity implements
                 }
             }
         });
-    }
-
-    @Override
-    public void onItemClick(int click) {
-        List<MovieEntry> movies = mAdapter.getMovies();
-        MovieEntry currentMovie = movies.get(click);
-
-        String id = String.valueOf(currentMovie.getMovieId());
-        String title = currentMovie.getTitle();
-        String poster = currentMovie.getPoster();
-        String plot = currentMovie.getPlot();
-        Double rating = currentMovie.getRating();
-        String releaseDate = currentMovie.getReleaseDate();
-
-        String[] movieDetail = {id, title, poster, plot, String.valueOf(rating), releaseDate};
-
-        Intent intent = new Intent(this, MovieDetail.class);
-        intent.putExtra(Intent.EXTRA_TEXT, movieDetail);
-        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, currentMovie);
-        startActivity(intent);
     }
 
     private void showError(int type) {
@@ -170,6 +147,26 @@ public class MainActivity extends AppCompatActivity implements
         mErrorText.setVisibility(View.INVISIBLE);
         mLoading.setVisibility(View.INVISIBLE);
         mRecyclerView.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onItemClick(int click) {
+        List<MovieEntry> movies = mAdapter.getMovies();
+        MovieEntry currentMovie = movies.get(click);
+
+        String id = String.valueOf(currentMovie.getMovieId());
+        String title = currentMovie.getTitle();
+        String poster = currentMovie.getPoster();
+        String plot = currentMovie.getPlot();
+        Double rating = currentMovie.getRating();
+        String releaseDate = currentMovie.getReleaseDate();
+
+        String[] movieDetail = {id, title, poster, plot, String.valueOf(rating), releaseDate};
+
+        Intent intent = new Intent(this, MovieDetail.class);
+        intent.putExtra(Intent.EXTRA_TEXT, movieDetail);
+        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, currentMovie);
+        startActivity(intent);
     }
 
     @NonNull
@@ -253,7 +250,9 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onResume() {
         super.onResume();
-        if (mSort == FAVORITES)
+        if (mSort == FAVORITES) {
+            Log.v("hello", "Resume");
             loadFavorites();
+        }
     }
 }

@@ -10,11 +10,11 @@ import com.example.android.popularmoviesstage2.database.MovieEntry;
 
 import java.util.List;
 
-public class MainViewModel extends AndroidViewModel {
+public class FavoriteViewModel extends AndroidViewModel {
 
     private LiveData<List<MovieEntry>> favorites;
 
-    public MainViewModel(@NonNull Application application) {
+    public FavoriteViewModel(@NonNull Application application) {
         super(application);
         AppDatabase database = AppDatabase.getsInstance(this.getApplication());
         favorites = database.favoriteDao().loadAllFavorites();
