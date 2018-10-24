@@ -12,6 +12,9 @@ import java.util.List;
 
 public final class MovieJsonUtils {
 
+    private MovieJsonUtils() {
+    }
+
     public static List<MovieEntry> getMovieDetails(String mainJson) {
 
         List<Result> results = new Gson().fromJson(mainJson, MovieDetailPojo.class).getResults();

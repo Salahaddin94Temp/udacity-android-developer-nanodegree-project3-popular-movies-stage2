@@ -32,6 +32,9 @@ public final class NetworkUtils {
 
     private static final String API_PARAM = "api_key";
 
+    private NetworkUtils() {
+    }
+
     private static URL getUrl(String path) {
 
         Uri uri = Uri.parse(MOVIE_BASE_URL).buildUpon()

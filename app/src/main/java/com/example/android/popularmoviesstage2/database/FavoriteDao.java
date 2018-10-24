@@ -6,7 +6,6 @@ import android.arch.persistence.room.Delete;
 import android.arch.persistence.room.Insert;
 import android.arch.persistence.room.OnConflictStrategy;
 import android.arch.persistence.room.Query;
-import android.database.Cursor;
 
 import java.util.List;
 
@@ -23,5 +22,5 @@ public interface FavoriteDao {
     void deleteFavorite(MovieEntry movieEntry);
 
     @Query("SELECT * FROM favorite_movie WHERE movie_id = :movieId")
-    Cursor getFavorite(int movieId);
+    LiveData<MovieEntry> getFavorite(int movieId);
 }

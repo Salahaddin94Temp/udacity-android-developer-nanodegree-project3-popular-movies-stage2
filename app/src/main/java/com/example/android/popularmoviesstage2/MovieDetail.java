@@ -1,7 +1,8 @@
 package com.example.android.popularmoviesstage2;
 
+import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
-import android.database.Cursor;
 import android.databinding.DataBindingUtil;
 import android.net.Uri;
 import android.os.Bundle;
@@ -43,6 +44,7 @@ public class MovieDetail extends AppCompatActivity implements
     private boolean mIsFavorite;
 
     private AppDatabase mDb;
+    private MovieEntry mMovieEntry;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,9 +82,8 @@ public class MovieDetail extends AppCompatActivity implements
                         AppExecutors.getInstance().diskIO().execute(new Runnable() {
                             @Override
                             public void run() {
-                                Cursor cursor = mDb.favoriteDao().getFavorite(Integer.parseInt(mMovieId));
-                                if (cursor.getCount() > 0)
-                                    return;
+
+                                if (mIsFavorite) return;
 
                                 mDb.favoriteDao().insertFavorite(movieEntry);
                             }
@@ -91,7 +92,10 @@ public class MovieDetail extends AppCompatActivity implements
                         AppExecutors.getInstance().diskIO().execute(new Runnable() {
                             @Override
                             public void run() {
-                                mDb.favoriteDao().deleteFavorite(movieEntry);
+
+                                if (!mIsFavorite) return;
+
+                                mDb.favoriteDao().deleteFavorite(mMovieEntry);
                             }
                         });
                     }
@@ -123,11 +127,17 @@ public class MovieDetail extends AppCompatActivity implements
         final String releaseDate = movieDetail[5];
         mBinding.tvReleaseDate.setText(releaseDate);
 
-        AppExecutors.getInstance().diskIO().execute(new Runnable() {
+        DetailViewModelFactory factory = new DetailViewModelFactory(mDb, Integer.parseInt(mMovieId));
+        DetailViewModel viewModel = ViewModelProviders.of(this, factory).get(DetailViewModel.class);
+
+        viewModel.getMovieDetail().observe(this, new Observer<MovieEntry>() {
             @Override
-            public void run() {
-                Cursor cursor = mDb.favoriteDao().getFavorite(Integer.parseInt(mMovieId));
-                mIsFavorite = cursor.getCount() > 0;
+            public void onChanged(@Nullable MovieEntry movieEntry) {
+                if (movieEntry != null) {
+                    mMovieEntry = movieEntry;
+                    mIsFavorite = true;
+                } else
+                    mIsFavorite = false;
 
                 mBinding.cbFavorite.setChecked(mIsFavorite);
             }
